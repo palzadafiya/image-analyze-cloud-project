@@ -33,6 +33,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     });
 
     const data = await response.json();
+    console.log(data);
     fs.unlinkSync(imagePath); // cleanup temp file
 
     res.render('index', { result: data });
