@@ -36,7 +36,10 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     console.log(data)
     fs.unlinkSync(imagePath); // cleanup temp file
 
-    res.render('index', { result: data.labels.join(", ") });
+    res.render('index', { 
+      result: data.labels.join(', '),
+      imageUrl: `/uploads/${req.file.filename}` // or your S3 URL
+    });
   } catch (error) {
     console.error("Error during fetch:", error);
     res.render('index', { result: "Error processing image." });
