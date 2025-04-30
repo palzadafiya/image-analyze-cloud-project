@@ -8,7 +8,7 @@ const app = express();
 
 // Configure multer to preserve file extension
 const storage = multer.diskStorage({
-  destination: 'uploads/',
+  destination: 'public/uploads/',
   filename: function (req, file, cb) {
     cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
   }
@@ -48,7 +48,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     // Render with both result and image URL
     res.render('index', { 
       result: data.labels.join(', '),
-      imageUrl: `public/uploads/${req.file.filename}` // This now points to the actual file
+      imageUrl: `/uploads/${req.file.filename}` // This now points to the actual file
     });
     
   } catch (error) {
@@ -57,11 +57,6 @@ app.post('/upload', upload.single('image'), async (req, res) => {
       result: "Error processing image.",
       imageUrl: null
     });
-  } finally {
-    // Cleanup temp file (if you want to keep it, remove this line)
-    if (fs.existsSync(imagePath)) {
-      fs.unlinkSync(imagePath);
-    }
   }
 });
 
