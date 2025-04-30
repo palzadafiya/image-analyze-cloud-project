@@ -3,26 +3,118 @@
 <head>
   <meta charset="UTF-8">
   <title>Image Analyzer</title>
-  <link rel="stylesheet" href="/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .container {
+      background: #f9f9f9;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    form {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    label {
+      font-weight: bold;
+    }
+    input, button {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      cursor: pointer;
+    }
+    .result-container {
+      margin-top: 20px;
+      padding: 15px;
+      background: #e8f5e9;
+      border-radius: 4px;
+    }
+    .uploaded-image {
+      max-width: 100%;
+      height: auto;
+      margin: 15px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h2>Upload an Image</h2>
-    <form action="/upload" method="POST" enctype="multipart/form-data">
+    <form id="uploadForm" enctype="multipart/form-data">
       <label>Email:</label>
       <input type="email" name="email" required>
 
       <label>Upload Image:</label>
-      <input type="file" name="image" accept="image/*" required>
+      <input type="file" name="image" id="imageInput" accept="image/*" required>
+      
+      <div id="imagePreview" style="display: none;">
+        <p><strong>Preview:</strong></p>
+        <img id="previewImage" class="uploaded-image" src="#" alt="Preview">
+      </div>
 
       <button type="submit">Submit</button>
     </form>
 
     <% if (result) { %>
-      <div class="result">
-        <strong>Detected:</strong> <%= result %>
+      <div class="result-container">
+        <h3>Analysis Results</h3>
+        <img src="<%= imageUrl %>" class="uploaded-image" alt="Uploaded Image">
+        <p><strong>Detected:</strong> <%= result %></p>
       </div>
     <% } %>
   </div>
+
+  <script>
+    // Preview image before upload
+    document.getElementById('imageInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+          document.getElementById('previewImage').src = event.target.result;
+          document.getElementById('imagePreview').style.display = 'block';
+        }
+        reader.readAsDataURL(file);
+      }
+    });
+
+    // Handle form submission with AJAX to maintain image preview
+    document.getElementById('uploadForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const response = await fetch('/upload', {
+        method: 'POST',
+        body: formData
+      });
+      
+      const result = await response.json();
+      if (response.ok) {
+        // Display results (you'll need to update this based on your backend response)
+        const resultContainer = document.createElement('div');
+        resultContainer.className = 'result-container';
+        resultContainer.innerHTML = `
+          <h3>Analysis Results</h3>
+          <img src="${document.getElementById('previewImage').src}" class="uploaded-image" alt="Uploaded Image">
+          <p><strong>Detected:</strong> ${result.labels.join(', ')}</p>
+        `;
+        document.querySelector('.container').appendChild(resultContainer);
+      } else {
+        alert('Error: ' + (result.error || 'Failed to process image'));
+      }
+    });
+  </script>
 </body>
 </html>
