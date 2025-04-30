@@ -35,7 +35,7 @@ app.post('/upload', upload.single('image'), async (req, res) => {
     const data = await response.json();
     fs.unlinkSync(imagePath); // cleanup temp file
 
-    res.render('index', { result: data.labels.join(", ") });
+    res.render('index', { result: data });
   } catch (error) {
     console.error("Error during fetch:", error);
     res.render('index', { result: "Error processing image." });
