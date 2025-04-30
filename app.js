@@ -6,22 +6,18 @@ require('dotenv').config();
 
 const app = express();
 
-// Configure storage to keep original filename
+// Configure multer to preserve file extension
 const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'public/uploads/')  // Store in public/uploads
-  },
+  destination: 'uploads/',
   filename: function (req, file, cb) {
-    // Keep original filename with timestamp
-    cb(null, Date.now() + '-' + file.originalname)
+    cb(null, file.fieldname + '-' + Date.now() + path.extname(file.originalname))
   }
 });
-
-
 const upload = multer({ storage: storage });
 
 app.set('view engine', 'ejs');
-app.use(express.static('public')); // Serve static files from public
+app.use(express.static('public'));
+app.use('/uploads', express.static('uploads')); // Serve uploaded files
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
@@ -30,38 +26,42 @@ app.get('/', (req, res) => {
 });
 
 app.post('/upload', upload.single('image'), async (req, res) => {
+  const { email } = req.body;
+  const imagePath = req.file.path;
+  
   try {
-    if (!req.file) {
-      throw new Error('No file uploaded');
-    }
-
-    // Construct correct URL path (relative to public folder)
-    const imageUrl = '/uploads/' + req.file.filename;
-
-    // Process image (your existing code)
-    const image = fs.readFileSync(req.file.path, { encoding: 'base64' });
+    const image = fs.readFileSync(imagePath, { encoding: 'base64' });
+    
     const response = await fetch(process.env.ML_URL, {
       method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: req.body.email,
-        filename: req.file.filename,
+        email: email,
+        filename: req.file.filename, // Use the stored filename
         imageData: image
       })
     });
+
     const data = await response.json();
-
-    // Render with proper image URL
-    res.render('index', {
+    console.log(data);
+    
+    // Render with both result and image URL
+    res.render('index', { 
       result: data.labels.join(', '),
-      imageUrl: imageUrl
+      imageUrl: `public/uploads/${req.file.filename}` // This now points to the actual file
     });
-
+    
   } catch (error) {
-    console.error(error);
-    res.render('index', {
-      result: "Error: " + error.message,
+    console.error("Error during fetch:", error);
+    res.render('index', { 
+      result: "Error processing image.",
       imageUrl: null
     });
+  } finally {
+    // Cleanup temp file (if you want to keep it, remove this line)
+    if (fs.existsSync(imagePath)) {
+      fs.unlinkSync(imagePath);
+    }
   }
 });
 
